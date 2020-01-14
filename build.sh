@@ -18,8 +18,8 @@ ARGS=$*
 # script, and that this script resides in the repo dir!
 REPODIR=$(cd $(dirname $0); pwd)
 
-VALIDARGS="clean io comms libengine engine pyblazing algebra test -v -g -n -h"
-HELP="$0 [-v] [-g] [-n] [-h]
+VALIDARGS="clean io comms libengine engine pyblazing algebra -t -v -g -n -h"
+HELP="$0 [-t] [-v] [-g] [-n] [-h]
    clean        - remove all existing build artifacts and configuration (start
                   over)
    io           - build the IO C++ code only
@@ -28,7 +28,7 @@ HELP="$0 [-v] [-g] [-n] [-h]
    engine       - build the engine Python package
    pyblazing    - build the pyblazing Python package
    algebra      - build the algebra Python package
-   test         - build tests
+   -t           - skip tests
    -v           - verbose build mode
    -g           - build for debug
    -n           - no install step
@@ -48,7 +48,7 @@ BUILD_DIRS="${IO_BUILD_DIR} ${COMMS_BUILD_DIR} ${LIBENGINE_BUILD_DIR}"
 VERBOSE=""
 BUILD_TYPE=Release
 INSTALL_TARGET=install
-TESTS="OFF"
+TESTS="ON"
 
 # Set defaults for vars that may not have been defined externally
 #  FIXME: if INSTALL_PREFIX is not set, check PREFIX, then check
@@ -80,6 +80,9 @@ if (( ${NUMARGS} != 0 )); then
 fi
 
 # Process flags
+if hasArg -t; then
+    TESTS="OFF"
+fi
 if hasArg -v; then
     VERBOSE=1
 fi
@@ -104,10 +107,6 @@ if hasArg clean; then
     done
 fi
 
-if hasArg test; then
-    TESTS="ON"
-fi
-
 ################################################################################
 
 if buildAll || hasArg io; then
@@ -119,11 +118,15 @@ if buildAll || hasArg io; then
           -DBUILD_TESTING=${TESTS} \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
 
-    if [[ ${INSTALL_TARGET} != "" ]]; then
+    if [[ ${TESTS} == "ON" ]]; then
         make -j${PARALLEL_LEVEL} all
-        make -j${PARALLEL_LEVEL} install VERBOSE=${VERBOSE}
+        ctest
     else
         make -j${PARALLEL_LEVEL} VERBOSE=${VERBOSE}
+    fi
+
+    if [[ ${INSTALL_TARGET} != "" ]]; then
+        make -j${PARALLEL_LEVEL} install VERBOSE=${VERBOSE}
     fi
 fi
 
@@ -136,11 +139,15 @@ if buildAll || hasArg comms; then
           -DBUILD_TESTING=${TESTS} \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
 
-    if [[ ${INSTALL_TARGET} != "" ]]; then
+    if [[ ${TESTS} == "ON" ]]; then
         make -j${PARALLEL_LEVEL} all
-        make -j${PARALLEL_LEVEL} install VERBOSE=${VERBOSE}
+        ctest
     else
         make -j${PARALLEL_LEVEL} VERBOSE=${VERBOSE}
+    fi
+
+    if [[ ${INSTALL_TARGET} != "" ]]; then
+        make -j${PARALLEL_LEVEL} install VERBOSE=${VERBOSE}
     fi
 fi
 
@@ -148,16 +155,22 @@ if buildAll || hasArg libengine; then
 
     mkdir -p ${LIBENGINE_BUILD_DIR}
     cd ${LIBENGINE_BUILD_DIR}
+
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PREFIX/lib
     cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
           -DCMAKE_CXX11_ABI=ON \
           -DBUILD_TESTING=${TESTS} \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
 
-    if [[ ${INSTALL_TARGET} != "" ]]; then
+    if [[ ${TESTS} == "ON" ]]; then
         make -j${PARALLEL_LEVEL} all
-        make -j${PARALLEL_LEVEL} install VERBOSE=${VERBOSE}
+        ctest
     else
         make -j${PARALLEL_LEVEL} blazingsql-engine VERBOSE=${VERBOSE}
+    fi
+
+    if [[ ${INSTALL_TARGET} != "" ]]; then
+        make -j${PARALLEL_LEVEL} install VERBOSE=${VERBOSE}
     fi
 fi
 
@@ -183,13 +196,17 @@ if buildAll || hasArg pyblazing; then
     fi
 fi
 
-if buildAll || hasArg pyblazing; then
+if buildAll || hasArg algebra; then
 
     cd ${ALGEBRA_BUILD_DIR}
-    if [[ ${TESTS}=="ON" ]]; then
-        mvn clean install -Dmaven.test.skip=true -f pom.xml -Dmaven.repo.local=$INSTALL_PREFIX/blazing-protocol-mvn/
-    else
+    if [[ ${TESTS} == "ON" ]]; then
         mvn clean install -f pom.xml -Dmaven.repo.local=$INSTALL_PREFIX/blazing-protocol-mvn/
+    else
+        mvn clean install -Dmaven.test.skip=true -f pom.xml -Dmaven.repo.local=$INSTALL_PREFIX/blazing-protocol-mvn/
+    fi
+    if [[ ${INSTALL_TARGET} != "" ]]; then
+        cp blazingdb-calcite-application/target/BlazingCalcite.jar $INSTALL_PREFIX/lib/blazingsql-algebra.jar
+        cp blazingdb-calcite-core/target/blazingdb-calcite-core.jar $INSTALL_PREFIX/lib/blazingsql-algebra-core.jar
     fi
 fi
 
