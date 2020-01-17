@@ -55,7 +55,11 @@ TESTS="ON"
 #         CONDA_PREFIX, but there is no fallback from there!
 INSTALL_PREFIX=${INSTALL_PREFIX:=${PREFIX:=${CONDA_PREFIX}}}
 PARALLEL_LEVEL=${PARALLEL_LEVEL:=""}
+
 export CUDACXX=/usr/local/cuda/bin/nvcc
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PREFIX/lib
+export CXXFLAGS="-L$INSTALL_PREFIX/lib"
+export CFLAGS=$CXXFLAGS
 
 function hasArg {
     (( ${NUMARGS} != 0 )) && (echo " ${ARGS} " | grep -q " $1 ")
@@ -154,11 +158,6 @@ if buildAll || hasArg libengine; then
 
     mkdir -p ${LIBENGINE_BUILD_DIR}
     cd ${LIBENGINE_BUILD_DIR}
-
-    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INSTALL_PREFIX/lib
-    export CXXFLAGS="-L$INSTALL_PREFIX/lib"
-    export CFLAGS=$CXXFLAGS
-
     cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
           -DCMAKE_EXE_LINKER_FLAGS="$CXXFLAGS"
           -DBUILD_TESTING=${TESTS} \
@@ -173,6 +172,7 @@ if buildAll || hasArg libengine; then
 
     if [[ ${INSTALL_TARGET} != "" ]]; then
         make -j${PARALLEL_LEVEL} install VERBOSE=${VERBOSE}
+        cp libblazingsql-engine.so ${INSTALL_PREFIX}/lib/libblazingsql-engine.so
     fi
 fi
 
@@ -182,6 +182,9 @@ if buildAll || hasArg engine; then
     if [[ ${INSTALL_TARGET} != "" ]]; then
         python setup.py build_ext --inplace
         python setup.py install --single-version-externally-managed --record=record.txt
+
+        cp `pwd`/cio*.so `pwd`/../../_h_env*/lib/python*/site-packages
+        cp -r `pwd`/bsql_engine `pwd`/../../_h_env*/lib/python*/site-packages
     else
         python setup.py build_ext --inplace --library-dir=${LIBENGINE_BUILD_DIR}
     fi
@@ -193,6 +196,9 @@ if buildAll || hasArg pyblazing; then
     if [[ ${INSTALL_TARGET} != "" ]]; then
         python setup.py build_ext --inplace
         python setup.py install --single-version-externally-managed --record=record.txt
+
+        cp -r `pwd`/pyblazing `pwd`/../../_h_env*/lib/python*/site-packages
+        cp -r `pwd`/blazingsql `pwd`/../../_h_env*/lib/python*/site-packages
     else
         python setup.py build_ext --inplace
     fi
