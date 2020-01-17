@@ -25,6 +25,7 @@ fi
 
 docker run --rm \
     --runtime=nvidia \
+    -ti \
     -u $(id -u):$(id -g) \
     -e CUDA_VER=${CUDA_VERSION} -e PYTHON=$PYTHON_VERSION -e RAPIDS_BUILD_VERSION=$3 \
     -e CONDA_BUILD=$4 -e CONDA_UPLOAD=$5 -e MY_UPLOAD_KEY=$6 \
@@ -33,5 +34,6 @@ docker run --rm \
     -v $CONDA_CACHE:/.cache/ \
     -v ${WORKSPACE}:${WORKSPACE} -w ${WORKSPACE} \
     gpuci/miniconda-cuda:${CUDA_VERSION}-devel-ubuntu16.04 \
-    ./ci/cpu/build.sh
+    bash
+    # ./ci/cpu/build.sh
 
