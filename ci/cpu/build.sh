@@ -50,8 +50,10 @@ export GIT_DESCRIBE_NUMBER=`git rev-list ${GIT_DESCRIBE_TAG}..HEAD --count`
 logger "Get env..."
 env
 
+conda create python=3.7 -y -n gdf
 logger "Activate conda env..."
 source activate gdf
+conda install conda-build anaconda-client -y
 
 logger "Check versions..."
 python --version
