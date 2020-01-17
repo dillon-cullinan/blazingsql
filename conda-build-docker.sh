@@ -29,6 +29,7 @@ docker run --rm \
     -u $(id -u):$(id -g) \
     -e CUDA_VER=${CUDA_VERSION} -e PYTHON=$PYTHON_VERSION -e RAPIDS_BUILD_VERSION=$3 \
     -e CONDA_BUILD=$4 -e CONDA_UPLOAD=$5 -e MY_UPLOAD_KEY=$6 \
+    -e WORKSPACE:${WORKSPACE} \
     -v $CONDA_RC:/.condarc \
     -v $CONDA_PKGS:/opt/conda/pkgs/ \
     -v $CONDA_CACHE:/.cache/ \

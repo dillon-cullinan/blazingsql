@@ -159,7 +159,7 @@ if buildAll || hasArg libengine; then
     mkdir -p ${LIBENGINE_BUILD_DIR}
     cd ${LIBENGINE_BUILD_DIR}
     cmake -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} \
-          -DCMAKE_EXE_LINKER_FLAGS="$CXXFLAGS"
+          -DCMAKE_EXE_LINKER_FLAGS="$CXXFLAGS" \
           -DBUILD_TESTING=${TESTS} \
           -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
 

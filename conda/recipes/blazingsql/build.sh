@@ -2,4 +2,5 @@
 
 set -e
 
-${WORKSPACE}/build.sh
+#${WORKSPACE}/build.sh
+./build.sh
